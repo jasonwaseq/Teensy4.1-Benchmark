@@ -1,0 +1,37 @@
+# PlatformIO build/output
+.pio/
+.pio_core/
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Logs/temp
+*.log
+*.tmp
+*.temp
+
+# Serial captures / exported data
+*.csv
+*.jsonl
+captures/
+
+# Firmware / binary artifacts
+*.elf
+*.hex
+*.bin
+*.map
+
