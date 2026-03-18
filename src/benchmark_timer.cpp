@@ -7,15 +7,22 @@
 namespace bench {
 
 void BenchmarkTimer::init() {
-#if defined(__arm__) && defined(DWT_CTRL_CYCCNTENA_Msk)
+#if defined(ARM_DEMCR) && defined(ARM_DEMCR_TRCENA) && defined(ARM_DWT_CTRL) && \
+    defined(ARM_DWT_CTRL_CYCCNTENA) && defined(ARM_DWT_CYCCNT)
+  ARM_DEMCR |= ARM_DEMCR_TRCENA;
+  ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
+  ARM_DWT_CYCCNT = 0;
+#elif defined(__arm__) && defined(DWT_CTRL_CYCCNTENA_Msk)
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-  DWT->CYCCNT = 0;
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+  DWT->CYCCNT = 0;
 #endif
 }
 
 uint32_t BenchmarkTimer::now_cycles() {
-#if defined(__arm__) && defined(DWT_CTRL_CYCCNTENA_Msk)
+#if defined(ARM_DWT_CYCCNT)
+  return ARM_DWT_CYCCNT;
+#elif defined(__arm__) && defined(DWT_CTRL_CYCCNTENA_Msk)
   return DWT->CYCCNT;
 #else
   return static_cast<uint32_t>(micros());
@@ -40,4 +47,3 @@ uint32_t BenchmarkTimer::cpu_hz() {
 }
 
 }  // namespace bench
-

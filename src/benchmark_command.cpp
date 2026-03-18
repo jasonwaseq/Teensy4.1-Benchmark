@@ -6,6 +6,29 @@
 #include <string.h>
 
 namespace bench {
+namespace {
+
+void print_config(const RuntimeConfig& cfg) {
+  Serial.println("[config]");
+  Serial.print("  trials=");
+  Serial.println(cfg.trials);
+  Serial.print("  warmups=");
+  Serial.println(cfg.warmups);
+  Serial.print("  mode=");
+  Serial.println(interrupt_mode_to_cstr(cfg.interrupt_mode));
+  Serial.print("  json=");
+  Serial.println(cfg.emit_json ? 1 : 0);
+  Serial.print("  summary=");
+  Serial.println(cfg.emit_summary ? 1 : 0);
+  Serial.print("  log=");
+  Serial.println(cfg.human_log_style == HumanLogStyle::Table ? "table" : "compact");
+  Serial.print("  min_cycles=");
+  Serial.println(cfg.target_min_cycles);
+  Serial.print("  distribution=");
+  Serial.println(cfg.distribution_mode ? 1 : 0);
+}
+
+}  // namespace
 
 BenchmarkCommandInterface::BenchmarkCommandInterface(BenchmarkRunner& runner, RuntimeConfig& cfg)
     : runner_(runner), cfg_(cfg), line_(), line_len_(0) {}
@@ -48,11 +71,14 @@ void BenchmarkCommandInterface::handle_line(char* line) {
     Serial.println("  set mode <isolated|realistic|periodic|usb>");
     Serial.println("  set json <0|1>");
     Serial.println("  set summary <0|1>");
+    Serial.println("  set log <table|compact>");
     Serial.println("  set min_cycles <n>");
     Serial.println("  set dist <0|1>");
     Serial.println("  set dist_setup_each <0|1>");
     Serial.println("  set filter_name <substr|none>");
     Serial.println("  set filter_category <category|none>");
+    Serial.println("  show config");
+    Serial.println("note: human-readable output is default; use 'set json 1' for JSON lines");
     return;
   }
 
@@ -102,13 +128,26 @@ void BenchmarkCommandInterface::handle_line(char* line) {
     }
 
     if (strcmp(key, "trials") == 0) {
-      cfg_.trials = static_cast<uint16_t>(strtoul(value, nullptr, 10));
-      Serial.println("[ok] trials updated");
+      uint32_t v = strtoul(value, nullptr, 10);
+      if (v == 0u) {
+        v = 1u;
+      }
+      if (v > kMaxTrials) {
+        v = kMaxTrials;
+      }
+      cfg_.trials = static_cast<uint16_t>(v);
+      Serial.print("[ok] trials=");
+      Serial.println(cfg_.trials);
       return;
     }
     if (strcmp(key, "warmups") == 0) {
-      cfg_.warmups = static_cast<uint16_t>(strtoul(value, nullptr, 10));
-      Serial.println("[ok] warmups updated");
+      uint32_t v = strtoul(value, nullptr, 10);
+      if (v > 1024u) {
+        v = 1024u;
+      }
+      cfg_.warmups = static_cast<uint16_t>(v);
+      Serial.print("[ok] warmups=");
+      Serial.println(cfg_.warmups);
       return;
     }
     if (strcmp(key, "json") == 0) {
@@ -121,9 +160,25 @@ void BenchmarkCommandInterface::handle_line(char* line) {
       Serial.println("[ok] summary toggle updated");
       return;
     }
+    if (strcmp(key, "log") == 0) {
+      HumanLogStyle style;
+      if (!parse_human_log_style(value, style)) {
+        Serial.println("[error] unknown log style; use table|compact");
+        return;
+      }
+      cfg_.human_log_style = style;
+      Serial.print("[ok] log style=");
+      Serial.println(cfg_.human_log_style == HumanLogStyle::Table ? "table" : "compact");
+      return;
+    }
     if (strcmp(key, "min_cycles") == 0) {
-      cfg_.target_min_cycles = strtoul(value, nullptr, 10);
-      Serial.println("[ok] target min cycles updated");
+      uint32_t v = strtoul(value, nullptr, 10);
+      if (v < 1000u) {
+        v = 1000u;
+      }
+      cfg_.target_min_cycles = v;
+      Serial.print("[ok] target min cycles=");
+      Serial.println(cfg_.target_min_cycles);
       return;
     }
     if (strcmp(key, "dist") == 0) {
@@ -177,8 +232,17 @@ void BenchmarkCommandInterface::handle_line(char* line) {
     return;
   }
 
+  if (strcmp(cmd, "show") == 0) {
+    char* what = strtok(nullptr, " \t");
+    if (what != nullptr && strcmp(what, "config") == 0) {
+      print_config(cfg_);
+      return;
+    }
+    Serial.println("[error] usage: show config");
+    return;
+  }
+
   Serial.println("[error] unknown command, use help");
 }
 
 }  // namespace bench
-

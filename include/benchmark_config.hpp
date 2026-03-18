@@ -28,6 +28,11 @@ constexpr uint16_t kMaxBenchmarks = 192u;
 constexpr uint16_t kMaxTrials = 64u;
 constexpr uint32_t kDeterministicSeed = 0xC0FFEE01u;
 
+enum class HumanLogStyle : uint8_t {
+  Table = 0,
+  Compact = 1
+};
+
 struct RuntimeConfig {
   uint16_t warmups;
   uint16_t trials;
@@ -37,6 +42,7 @@ struct RuntimeConfig {
   InterruptMode interrupt_mode;
   bool emit_json;
   bool emit_summary;
+  HumanLogStyle human_log_style;
   bool distribution_mode;
   bool setup_each_trial_in_distribution;
   bool include_optional;
@@ -50,5 +56,6 @@ struct RuntimeConfig {
 
 RuntimeConfig default_runtime_config();
 void set_run_id(RuntimeConfig& cfg, uint32_t epoch_hint_ms);
+bool parse_human_log_style(const char* text, HumanLogStyle& out);
 
 }  // namespace bench

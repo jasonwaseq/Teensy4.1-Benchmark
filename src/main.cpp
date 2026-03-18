@@ -33,6 +33,11 @@ void benchmark_setup() {
   Serial.println("[boot] Teensy 4.1 architecture-aware benchmark suite");
   Serial.print("[boot] run_id=");
   Serial.println(g_config.run_id);
+  if (g_config.auto_run_on_boot) {
+    Serial.println("[boot] auto-run enabled");
+  } else {
+    Serial.println("[boot] auto-run disabled (type 'run-all' or use capture script)");
+  }
   Serial.println("[boot] type 'help' for commands");
 
   if (g_config.auto_run_on_boot) {

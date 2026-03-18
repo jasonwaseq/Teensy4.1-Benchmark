@@ -40,12 +40,13 @@ RuntimeConfig default_runtime_config() {
   cfg.min_iters = kMinIters;
   cfg.max_iters = kMaxIters;
   cfg.interrupt_mode = InterruptMode::RealisticIdle;
-  cfg.emit_json = true;
+  cfg.emit_json = false;
   cfg.emit_summary = true;
+  cfg.human_log_style = HumanLogStyle::Table;
   cfg.distribution_mode = false;
   cfg.setup_each_trial_in_distribution = false;
   cfg.include_optional = true;
-  cfg.auto_run_on_boot = true;
+  cfg.auto_run_on_boot = false;
   cfg.filter_by_category = false;
   cfg.category_filter = Category::Compute;
   cfg.filter_by_name = false;
@@ -160,6 +161,18 @@ bool parse_interrupt_mode(const char* text, InterruptMode& out) {
   }
   if (eq_nocase(text, "usb") || eq_nocase(text, "usb_active")) {
     out = InterruptMode::UsbActive;
+    return true;
+  }
+  return false;
+}
+
+bool parse_human_log_style(const char* text, HumanLogStyle& out) {
+  if (eq_nocase(text, "table")) {
+    out = HumanLogStyle::Table;
+    return true;
+  }
+  if (eq_nocase(text, "compact")) {
+    out = HumanLogStyle::Compact;
     return true;
   }
   return false;

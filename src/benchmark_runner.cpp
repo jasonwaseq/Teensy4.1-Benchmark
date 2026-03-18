@@ -290,12 +290,25 @@ bool BenchmarkRunner::run_single(const BenchmarkDef& def, const BenchmarkParamSe
 }
 
 void BenchmarkRunner::run_group(Category category) {
+  uint16_t total_in_group = 0;
+  for (size_t i = 0; i < benchmark_count(); ++i) {
+    const BenchmarkDef* def = benchmark_at(i);
+    if (def == nullptr || def->category != category || !benchmark_selected(*def)) {
+      continue;
+    }
+    const uint8_t param_count = (def->param_set_count == 0u) ? 1u : def->param_set_count;
+    total_in_group = static_cast<uint16_t>(total_in_group + param_count);
+  }
+
   uint16_t total = 0;
   uint16_t passed = 0;
+  uint16_t ordinal = 0;
   const char* best_name = nullptr;
   double best_cycles_per_op = 0.0;
   const char* worst_name = nullptr;
   double worst_spread = 0.0;
+
+  reporter_.emit_group_start(category, total_in_group);
 
   for (size_t i = 0; i < benchmark_count(); ++i) {
     const BenchmarkDef* def = benchmark_at(i);
@@ -314,11 +327,12 @@ void BenchmarkRunner::run_group(Category category) {
       if (!executed) {
         continue;
       }
+      ++ordinal;
       ++total;
       if (result.meta.validation_pass) {
         ++passed;
       }
-      reporter_.emit_result(result);
+      reporter_.emit_result(result, ordinal, total_in_group);
 
       if (result.cycles_per_op > 0.0 && (best_name == nullptr || result.cycles_per_op < best_cycles_per_op)) {
         best_name = result.meta.benchmark_name;
@@ -357,13 +371,21 @@ bool BenchmarkRunner::run_by_name(const char* name) {
   }
   const uint8_t param_count = (def->param_set_count == 0u) ? 1u : def->param_set_count;
   static const BenchmarkParamSet kEmptyParamSet = {"default", nullptr, 0, 0, 0.0f, 0.0f};
+  reporter_.emit_group_start(def->category, param_count);
+  uint16_t total = 0;
+  uint16_t passed = 0;
   for (uint8_t i = 0; i < param_count; ++i) {
     const BenchmarkParamSet& params = (def->param_set_count == 0u) ? kEmptyParamSet : def->param_sets[i];
     BenchmarkAggregate result = {};
     if (run_single(*def, params, result)) {
-      reporter_.emit_result(result);
+      ++total;
+      if (result.meta.validation_pass) {
+        ++passed;
+      }
+      reporter_.emit_result(result, static_cast<uint16_t>(i + 1u), param_count);
     }
   }
+  reporter_.emit_group_summary(def->category, total, passed, nullptr, 0.0, nullptr, 0.0);
   return true;
 }
 
